@@ -63,6 +63,10 @@ def format_rp(amount):
     except Exception:
         return str(amount)
 
+
+
+
+
 # ----------------- registrasi -----------------
 def registrasi():
     while True:
@@ -73,11 +77,11 @@ def registrasi():
         print("Catatan: Ketik 0 kapan saja untuk kembali.\n")
 
         # ========== INPUT DASAR USER ==========
-        username = input_nonempty("Username: ", maxlen=100)
+        username = input_nonempty("Username: ", maxlen=50)
         if username == "0":
             return
 
-        password = input_nonempty("Password: ", maxlen=150)
+        password = input_nonempty("Password: ", maxlen=100)
         if password == "0":
             return
 
@@ -247,6 +251,8 @@ def login():
 
 
 
+
+
 # ----------------- produk -----------------
 def lihat_produk(show_deleted=False):
     conn = connectDB()
@@ -261,6 +267,7 @@ def lihat_produk(show_deleted=False):
 
     cur = conn.cursor()
     try:
+        # Query produk berdasarkan parameter
         if show_deleted:
             cur.execute("""
                 SELECT id_produk, nama_produk, grade, stok, is_delete
@@ -280,11 +287,14 @@ def lihat_produk(show_deleted=False):
             input("Tekan Enter...")
             return []
 
+        # Harga tetap berdasarkan grade
         harga_grade = {
             'A': 62500,
             'B': 56000,
             'C': 49000
         }
+
+        # Format tabel tampilan
         table_data = []
         for row in data:
             id_produk, nama, grade, stok = row[:4]
@@ -295,7 +305,7 @@ def lihat_produk(show_deleted=False):
                 nama,
                 grade,
                 stok,
-                f"Rp {harga:,}".replace(",", ".") 
+                f"Rp {harga:,}".replace(",", ".")  # Format ribuan: Rp 62.500
             ])
 
         print(tabulate(
@@ -319,7 +329,7 @@ def lihat_produk(show_deleted=False):
 
 
 
-
+# ------------------- tambah produk --------------------
 def tambah_produk():
     while True:
         clear()
@@ -330,14 +340,19 @@ def tambah_produk():
 
         nama_produk = input("Nama Produk : ").strip()
         if nama_produk.lower() == "x":
-            return  
+            return  # kembali ke menu admin
         if not nama_produk:
             print("Nama produk tidak boleh kosong!")
             input("Tekan Enter...")
             continue
 
-        grade = input_choice("Grade", ['a', 'b', 'c']).upper()
+        grade = input_choice("Grade", ['a', 'b', 'c', 'x'] ).upper()
+        if grade.lower() == "x":
+            return
+        
         stok = input_digits("Stok Produk  : ")
+        if stok.lower() == "x":
+            return
 
         conn = connectDB()
         if conn is None:
@@ -363,8 +378,13 @@ def tambah_produk():
             conn.close()
 
         input("Tekan Enter untuk kembali...")
-        return  
+        return  # kembali ke menu admin setelah selesai
 
+
+
+
+
+# -------------------- update produk ---------------------
 def update_produk():
     while True:
         clear()
@@ -379,7 +399,8 @@ def update_produk():
             return
 
         cur = conn.cursor()
-        try:   
+        try:
+            # tampilkan list produk
             cur.execute("""
                 SELECT id_produk, nama_produk, grade, stok 
                 FROM produk_kakao 
@@ -392,11 +413,13 @@ def update_produk():
                 print("Belum ada produk.")
                 input("Tekan Enter...")
                 return
+
             print(tabulate(rows, headers=["ID", "Nama", "Grade", "Stok"], tablefmt="psql"))
 
+            # pilih ID produk
             idp = input("\nMasukkan ID produk yang ingin diupdate (X untuk kembali): ").strip()
             if idp.lower() == "x":
-                return  
+                return  # kembali ke menu admin
 
             if not idp.isdigit():
                 print("ID harus berupa angka!")
@@ -405,16 +428,27 @@ def update_produk():
 
             idp = int(idp)
 
+            # cek produk ada
             cur.execute("SELECT 1 FROM produk_kakao WHERE id_produk=%s AND is_delete=FALSE", (idp,))
             if cur.fetchone() is None:
                 print("Produk tidak ditemukan.")
                 input("Tekan Enter...")
                 continue
 
+            # input data baru
             nama_baru = input_nonempty("Nama Produk Baru : ", maxlen=150)
-            grade_baru = input_choice("Grade Baru", ['a', 'b', 'c']).upper()
+            if nama_baru.lower() == "x":
+                return
+            
+            grade_baru = input_choice("Grade Baru", ['a', 'b', 'c', 'x']).upper()
+            if grade_baru.lower() == "x":
+                return
+            
             stok_baru = input_digits("Stok Baru        : ")
+            if stok_baru.lower() == 'x':
+                return
 
+            # update database
             cur.execute("""
                 UPDATE produk_kakao 
                 SET nama_produk=%s, grade=%s, stok=%s 
@@ -436,6 +470,10 @@ def update_produk():
         return
 
 
+
+
+
+# ---------------------- hapus produk ------------------------
 def hapus_produk():
     while True:
         clear()
@@ -451,6 +489,7 @@ def hapus_produk():
 
         cur = conn.cursor()
         try:
+            # tampilkan produk
             cur.execute("""
                 SELECT id_produk, nama_produk 
                 FROM produk_kakao 
@@ -463,11 +502,13 @@ def hapus_produk():
                 print("Belum ada produk.")
                 input("Tekan Enter...")
                 return
+
             print(tabulate(rows, headers=["ID", "Nama"], tablefmt="psql"))
 
+            # pilih ID produk
             idp = input("\nMasukkan ID produk yang ingin dihapus (X untuk kembali): ").strip()
             if idp.lower() == "x":
-                return   
+                return   # kembali ke menu admin
 
             if not idp.isdigit():
                 print("ID harus angka!")
@@ -475,18 +516,20 @@ def hapus_produk():
                 continue
 
             idp = int(idp)
-           
+
+            # cek produk ada
             cur.execute("SELECT 1 FROM produk_kakao WHERE id_produk=%s AND is_delete=FALSE", (idp,))
             if cur.fetchone() is None:
                 print("Produk tidak ditemukan atau sudah dihapus.")
                 input("Tekan Enter...")
                 continue
 
+            # konfirmasi
             confirm = input_choice("Yakin ingin menghapus produk? (y/n)", ['y', 'n'], default='n')
             if confirm == 'y':
                 cur.execute("UPDATE produk_kakao SET is_delete = TRUE WHERE id_produk=%s", (idp,))
                 conn.commit()
-                print("Produk berhasil dihapus (soft delete).")
+                print("Produk berhasil dihapus")
             else:
                 print("Penghapusan dibatalkan.")
 
@@ -501,8 +544,11 @@ def hapus_produk():
         input("Tekan Enter untuk kembali...")
         return
 
-# ----------------- transaksi (generik) -----------------
 
+
+
+
+# ----------------- transaksi (generik) -----------------
 def input_transaksi(admin_mode=False, current_user_id=None, role=None):
     clear()
     print("====================================")
@@ -517,11 +563,12 @@ def input_transaksi(admin_mode=False, current_user_id=None, role=None):
 
     cur = conn.cursor()
     try:
+        # ====================== TAMPILKAN PRODUK ======================
         cur.execute("""
             SELECT id_produk, nama_produk, grade, stok
             FROM produk_kakao
             WHERE is_delete = FALSE ORDER BY id_produk
-        """) #mengambil semua produk yang belum di hapus
+        """)
         produk_data = cur.fetchall()
 
         if not produk_data:
@@ -529,9 +576,9 @@ def input_transaksi(admin_mode=False, current_user_id=None, role=None):
             input("Tekan Enter...")
             return
 
-        harga_grade = {'A': 62500, 'B': 56000, 'C': 49000}#harga/kg ditentukan berdasarkan grade
-
+        harga_grade = {'A': 62500, 'B': 56000, 'C': 49000}
         table_display = []
+
         for item in produk_data:
             pid, nama, grade, stok = item
             harga_display = f"Rp {harga_grade[grade.upper()]:,}".replace(",", ".")
@@ -543,17 +590,17 @@ def input_transaksi(admin_mode=False, current_user_id=None, role=None):
             tablefmt="psql"
         ))
 
+        # ====================== PILIH PRODUK ======================
         while True:
             id_produk = input("\nMasukkan ID Produk: ").strip()
             if id_produk.lower() == "exit":
                 return
-            
             if id_produk.isdigit():
                 id_produk = int(id_produk)
-                break #user harus memasukkan angka valid
+                break
             print("Masukkan angka ID yang valid!")
 
-        cur.execute("SELECT grade FROM produk_kakao WHERE id_produk=%s", (id_produk,))
+        cur.execute("SELECT grade, stok FROM produk_kakao WHERE id_produk=%s", (id_produk,))
         row = cur.fetchone()
         if not row:
             print("Produk tidak ditemukan!")
@@ -561,15 +608,18 @@ def input_transaksi(admin_mode=False, current_user_id=None, role=None):
             return
         
         grade_produk = row[0].upper()
+        stok_produk = row[1]
         harga_satuan = harga_grade[grade_produk]
 
+        # ====================== BERAT ======================
         while True:
             berat_str = input("Berat Biji (kg): ").strip()
             if berat_str.lower() == "exit":
                 return
             try:
                 berat = float(berat_str)
-                if berat > 0: break
+                if berat > 0:
+                    break
                 print("Berat harus > 0!")
             except:
                 print("Masukkan angka yang valid!")
@@ -577,18 +627,25 @@ def input_transaksi(admin_mode=False, current_user_id=None, role=None):
         jumlah = int(berat)
         subtotal = jumlah * harga_satuan
 
+        # ====================== JENIS TRANSAKSI ======================
         if admin_mode:
             jenis = input_choice("Jenis Transaksi", ['pembelian', 'penjualan'])
         else:
             jenis = "penjualan" if role == "petani" else "pembelian"
-        #petani otomatis jenis transaksinya penjualan
-        #petani -> pembelian
-        #admin bisa memilih kedua-duanya
+
         id_user = current_user_id
 
         status_bayar = "Pending"
         metode_bayar = "Belum Ditentukan"
 
+        # ====================== CEK STOK UNTUK PEMBELIAN ======================
+        if jenis == "pembelian":
+            if jumlah > stok_produk:
+                print(f"\n❌ Stok tidak cukup! Stok tersedia hanya {stok_produk} kg.")
+                input("Tekan Enter...")
+                return
+
+        # ====================== PEMBAYARAN UNTUK PEMBELI ======================
         if jenis == "pembelian":
             print(f"\nTotal harus dibayar: Rp {subtotal:,}".replace(",", "."))
             while True:
@@ -601,15 +658,15 @@ def input_transaksi(admin_mode=False, current_user_id=None, role=None):
                 print("Masukkan angka yang valid!")
 
             if uang_pembeli >= subtotal:
-                status_bayar = "Lunas" #sistem menentukan pembayaran lunas/hutang
+                status_bayar = "Lunas"
                 metode_bayar = input_choice("Metode Pembayaran", ["tunai", "transfer bank"])
-                #metode pembayaran ditentukan tunai/transfer bank
                 print("\nPembayaran LUNAS ✔")
             else:
                 status_bayar = "Hutang"
                 metode_bayar = "Belum Ditentukan"
                 print("\nPembayaran tidak cukup → status: HUTANG ")
 
+        # ====================== INSERT TRANSAKSI ======================
         cur.execute("""
             INSERT INTO transaksi (tanggal_transaksi, berat_biji, grade_mutu, 
                                    harga_satuan, id_user, jenis_transaksi)
@@ -624,16 +681,19 @@ def input_transaksi(admin_mode=False, current_user_id=None, role=None):
             VALUES (%s, %s, %s, %s, %s)
         """, (jumlah, harga_satuan, subtotal, id_produk, id_transaksi))
 
+        # ====================== INSERT PEMBAYARAN ======================
         cur.execute("""
             INSERT INTO pembayaran (metode_pembayaran, status, id_transaksi)
             VALUES (%s, %s, %s)
         """, (metode_bayar.title(), status_bayar.title(), id_transaksi))
 
+        # ====================== UPDATE STOK ======================
         if jenis == "penjualan":
             cur.execute("UPDATE produk_kakao SET stok = stok + %s WHERE id_produk=%s", (jumlah, id_produk))
             print(f"\nPetani menerima uang: Rp {subtotal:,}".replace(",", "."))
 
-        else:
+        elif jenis == "pembelian":
+            # stok sudah dipastikan cukup
             cur.execute("UPDATE produk_kakao SET stok = stok - %s WHERE id_produk=%s", (jumlah, id_produk))
 
         conn.commit()
@@ -647,7 +707,6 @@ def input_transaksi(admin_mode=False, current_user_id=None, role=None):
         cur.close()
         conn.close()
         input("\nTekan Enter untuk kembali...")
-      
 
 # ----------------- laporan -----------------
 def laporan_rekap():
@@ -662,6 +721,7 @@ def laporan_rekap():
         return
     cur = conn.cursor()
     try:
+        # Total Pembelian
         cur.execute("""
             SELECT COALESCE(SUM(dt.subtotal), 0)
             FROM transaksi t
@@ -670,6 +730,7 @@ def laporan_rekap():
         """)
         total_pembelian = cur.fetchone()[0] or 0
 
+        # Total Penjualan
         cur.execute("""
             SELECT COALESCE(SUM(dt.subtotal), 0)
             FROM transaksi t
@@ -678,6 +739,7 @@ def laporan_rekap():
         """)
         total_penjualan = cur.fetchone()[0] or 0
 
+        # Total Stok Produk
         cur.execute("SELECT COALESCE(SUM(stok), 0) FROM produk_kakao WHERE is_delete = FALSE")
         total_stok = cur.fetchone()[0] or 0
 
@@ -691,6 +753,8 @@ def laporan_rekap():
         cur.close()
         conn.close()
         input("Tekan Enter untuk kembali...")
+
+
 
 # ----------------- pembayaran -----------------
 def kelola_pembayaran():
@@ -744,7 +808,8 @@ def kelola_pembayaran():
         input("Tekan Enter untuk kembali...")
 
 
-# ----------------- lihat riwayat untuk petani/pembeli -----------------
+
+# ----------------- lihat riwayat untuk petani atau pembeli -----------------
 def lihat_riwayat(id_user):
     clear()
     print("====================================")
@@ -779,7 +844,9 @@ def lihat_riwayat(id_user):
         conn.close()
         input("Tekan Enter untuk kembali...")
 
-# ----------------- menu per role -----------------
+
+
+# -------------------- menu admin --------------------
 def menu_admin(user):
     while True:
         clear()
@@ -816,6 +883,9 @@ def menu_admin(user):
             print("Pilihan tidak valid.")
             input("Tekan Enter...")
 
+
+
+# ----------------------- menu petani ------------------------
 def menu_petani(user):
     while True:
         clear()
@@ -833,6 +903,7 @@ def menu_petani(user):
             lihat_produk()
 
         elif pilih == "2":
+            # PETANI → otomatis jenis = penjualan
             input_transaksi(
                 admin_mode=False, current_user_id=user['id'], role="petani")
 
@@ -846,6 +917,9 @@ def menu_petani(user):
             print("Pilihan tidak valid!")
             input("Tekan Enter...")
 
+
+
+# --------------------- menu pembeli ----------------------
 def menu_pembeli(user):
     while True:
         clear()
@@ -859,19 +933,25 @@ def menu_pembeli(user):
 
         pilihan = input("\nMasukkan pilihan: ").strip().lower()
 
+        
+        #Lihat Produk
         if pilihan == "1":
             lihat_produk()
             input("\nTekan Enter untuk kembali...")
 
+        
+        #Beli Produk
         elif pilihan == "2":
             input_transaksi(admin_mode=False, current_user_id=user['id'], role='pembeli')
 
             input("\nTekan Enter untuk kembali...")
 
+        #Lihat Riwayat Pembelian
         elif pilihan == "3":
             lihat_riwayat(user["id"])
             input("\nTekan Enter untuk kembali...")
 
+        # LOGOUT
         elif pilihan == "x":
             break
 
@@ -880,13 +960,14 @@ def menu_pembeli(user):
             input("Tekan Enter untuk melanjutkan...")
 
 
-# ----------------- menu utama -----------------
+
+# --------------------- menu utama ----------------------
 def menu_utama():
     while True:
         clear()
-        print('===================================================')
-        print('       SELAMAT DATANG DI AGROCOCOA NUSANTARA       ')
-        print('===================================================')
+        print('==========================================')
+        print('        SELAMAT DATANG DI AGROCOCOA       ')
+        print('==========================================')
         print('1. Registrasi Akun')
         print('2. Login')
         print('3. Keluar')
@@ -911,6 +992,7 @@ def menu_utama():
             input("Tekan Enter...")
 
 if __name__ == "__main__":
+    # hanya untuk testing koneksi awal
     conn = connectDB()
     if conn:
         conn.close()
