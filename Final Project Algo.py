@@ -77,11 +77,11 @@ def registrasi():
         print("Catatan: Ketik 0 kapan saja untuk kembali.\n")
 
         # ========== INPUT DASAR USER ==========
-        username = input_nonempty("Username: ", maxlen=50)
+        username = input_nonempty("Username: ", maxlen=100)
         if username == "0":
             return
 
-        password = input_nonempty("Password: ", maxlen=100)
+        password = input_nonempty("Password: ", maxlen=150)
         if password == "0":
             return
 
@@ -997,3 +997,4 @@ if __name__ == "__main__":
     if conn:
         conn.close()
     menu_utama()
+
