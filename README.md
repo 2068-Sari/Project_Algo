@@ -146,12 +146,15 @@ Fungsi: lihat_riwayat(id_user).
 
 3. Pastikan tabel-tabel berikut sudah dibuat:
 - users
-- produk_kakao
+- produk
 - transaksi
 - detail_transaksi
 - pembayaran
+- metode_pembayaran
 - desa
-- laporan
+- kecamatan
+- kabupaten
+
 4. Jalankan aplikasi melalui Terminal:
   python agrococoa_app.py
 
